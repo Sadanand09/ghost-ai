@@ -2,6 +2,9 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Switch dark: variant to class strategy so dark: utilities activate on html.dark */
+@custom-variant dark (&:is(.dark, .dark *));
+
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: var(--font-geist-sans);
@@ -78,6 +81,8 @@
 }
 
 :root {
+    color-scheme: dark;
+
     /* ── Custom design tokens ── */
     --bg-base: #080809;
     --bg-surface: #111114;
@@ -132,14 +137,18 @@
     --sidebar-ring: #00c8d4;
 }
 
+/* Unlayered — guaranteed to win over any @layer base overrides */
+html {
+    font-family: var(--font-geist-sans);
+}
+
+body {
+    background-color: var(--background);
+    color: var(--foreground);
+}
+
 @layer base {
     * {
         @apply border-border outline-ring/50;
-    }
-    body {
-        @apply bg-background text-foreground;
-    }
-    html {
-        @apply font-sans;
     }
 }
