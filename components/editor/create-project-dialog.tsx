@@ -14,10 +14,11 @@ import { Input } from "@/components/ui/input"
 interface CreateProjectDialogProps {
   open: boolean
   onClose: () => void
-  onConfirm: (name: string, slug: string) => void
+  onConfirm: () => void
   name: string
-  slug: string
+  roomId: string
   onNameChange: (value: string) => void
+  isLoading: boolean
 }
 
 export function CreateProjectDialog({
@@ -25,8 +26,9 @@ export function CreateProjectDialog({
   onClose,
   onConfirm,
   name,
-  slug,
+  roomId,
   onNameChange,
+  isLoading,
 }: CreateProjectDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
@@ -44,26 +46,27 @@ export function CreateProjectDialog({
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
             autoFocus
+            disabled={isLoading}
           />
           {name && (
             <p className="text-xs text-copy-secondary">
-              Slug:{" "}
+              Room ID:{" "}
               <span className="font-mono text-copy-primary">
-                {slug || "—"}
+                {roomId || "—"}
               </span>
             </p>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} className="text-copy-secondary">
+          <Button variant="outline" onClick={onClose} disabled={isLoading} className="text-copy-secondary">
             Cancel
           </Button>
           <Button
-            disabled={!name.trim()}
-            onClick={() => onConfirm(name, slug)}
+            disabled={!name.trim() || isLoading}
+            onClick={onConfirm}
           >
-            Create
+            {isLoading ? "Creating…" : "Create"}
           </Button>
         </DialogFooter>
       </DialogContent>
