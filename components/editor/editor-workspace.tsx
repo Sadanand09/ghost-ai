@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { PanelLeftClose, PanelLeftOpen, Share2, MessageSquare } from "lucide-react"
+import { PanelLeftClose, PanelLeftOpen, Share2, MessageSquare, LayoutTemplate } from "lucide-react"
 import { UserButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { ProjectSidebar } from "@/components/editor/project-sidebar"
@@ -10,8 +10,10 @@ import { CanvasWrapper } from "@/components/editor/canvas-wrapper"
 import { CreateProjectDialog } from "@/components/editor/create-project-dialog"
 import { RenameProjectDialog } from "@/components/editor/rename-project-dialog"
 import { DeleteProjectDialog } from "@/components/editor/delete-project-dialog"
+import { StarterTemplatesModal } from "@/components/editor/starter-templates-modal"
 import { useProjectActions } from "@/hooks/use-project-actions"
 import type { Project } from "@/hooks/use-project-dialogs"
+import type { CanvasApi } from "@/components/editor/canvas"
 
 interface EditorWorkspaceProps {
   projectName: string
@@ -24,6 +26,9 @@ export function EditorWorkspace({ projectName, currentProjectId, projects, isOwn
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false)
+  const [canvasApi, setCanvasApi] = useState<CanvasApi | null>(null)
+
   const {
     openDialog,
     activeProject,
@@ -69,6 +74,15 @@ export function EditorWorkspace({ projectName, currentProjectId, projects, isOwn
             variant="ghost"
             size="sm"
             className="h-7 gap-1.5 text-xs text-copy-muted hover:text-copy-primary"
+            onClick={() => setIsTemplatesOpen(true)}
+          >
+            <LayoutTemplate className="h-4 w-4" />
+            Templates
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 text-xs text-copy-muted hover:text-copy-primary"
             onClick={() => setIsShareOpen(true)}
           >
             <Share2 className="h-4 w-4" />
@@ -99,7 +113,7 @@ export function EditorWorkspace({ projectName, currentProjectId, projects, isOwn
       />
 
       <main className="absolute inset-0 pt-12">
-        <CanvasWrapper roomId={currentProjectId} />
+        <CanvasWrapper roomId={currentProjectId} onReady={setCanvasApi} />
       </main>
 
       {isAiPanelOpen && (
@@ -111,6 +125,12 @@ export function EditorWorkspace({ projectName, currentProjectId, projects, isOwn
         onClose={() => setIsShareOpen(false)}
         projectId={currentProjectId}
         isOwner={isOwner}
+      />
+
+      <StarterTemplatesModal
+        open={isTemplatesOpen}
+        onClose={() => setIsTemplatesOpen(false)}
+        onImport={(template) => canvasApi?.importTemplate(template)}
       />
 
       <CreateProjectDialog

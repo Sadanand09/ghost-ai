@@ -32,6 +32,10 @@ export interface NodeData extends JsonObject {
   shape: NodeShape
 }
 
+export interface CanvasEdgeData extends JsonObject {
+  label: string
+}
+
 export interface CanvasShapeDragPayload {
   shape: NodeShape
   size: NodeSize
@@ -48,7 +52,16 @@ export const SHAPE_DEFAULT_SIZES: Record<NodeShape, NodeSize> = {
   hexagon: { width: 196, height: 116 },
 }
 
+export const SHAPE_MIN_SIZES: Record<NodeShape, NodeSize> = {
+  rectangle: { width: 124, height: 72 },
+  diamond: { width: 128, height: 88 },
+  circle: { width: 96, height: 96 },
+  pill: { width: 148, height: 68 },
+  cylinder: { width: 124, height: 84 },
+  hexagon: { width: 132, height: 80 },
+}
+
 export const SHAPE_DRAG_MIME_TYPE = "application/x-ghost-shape"
 
 export type CanvasNode = Node<NodeData, "canvasNode">
-export type CanvasEdge = Edge<Record<string, unknown>, "canvasEdge">
+export type CanvasEdge = Edge<CanvasEdgeData, "canvasEdge">

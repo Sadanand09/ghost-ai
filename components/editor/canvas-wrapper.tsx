@@ -1,14 +1,17 @@
 "use client"
 
 import { LiveMap, LiveObject } from "@liveblocks/client"
-import { Component, type ReactNode, useRef } from "react"
+import { Component, type DragEvent, type ReactNode, useRef, useState } from "react"
 import { LiveblocksProvider, RoomProvider, ClientSideSuspense } from "@liveblocks/react"
-import { Canvas } from "@/components/editor/canvas"
+import { Canvas, type CanvasApi } from "@/components/editor/canvas"
+import { CanvasShapeFrame } from "@/components/editor/canvas-shape"
 import { ShapePanel } from "@/components/editor/shape-panel"
+import { DEFAULT_NODE_COLOR } from "@/types/canvas"
 import { SHAPE_DRAG_MIME_TYPE, type CanvasShapeDragPayload } from "@/types/canvas"
 
 interface CanvasWrapperProps {
   roomId: string
+  onReady?: (api: CanvasApi) => void
 }
 
 class CanvasErrorBoundary extends Component<
@@ -36,7 +39,7 @@ class CanvasErrorBoundary extends Component<
   }
 }
 
-export function CanvasWrapper({ roomId }: CanvasWrapperProps) {
+export function CanvasWrapper({ roomId, onReady }: CanvasWrapperProps) {
   return (
     <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
       <RoomProvider
@@ -57,7 +60,7 @@ export function CanvasWrapper({ roomId }: CanvasWrapperProps) {
               </div>
             }
           >
-            <CanvasSurface />
+            <CanvasSurface onReady={onReady} />
           </ClientSideSuspense>
         </CanvasErrorBoundary>
       </RoomProvider>
@@ -65,21 +68,37 @@ export function CanvasWrapper({ roomId }: CanvasWrapperProps) {
   )
 }
 
-function CanvasSurface() {
+function CanvasSurface({ onReady }: { onReady?: (api: CanvasApi) => void }) {
   const createNodeFromDropRef = useRef<
     ((payload: CanvasShapeDragPayload, clientPosition: { x: number; y: number }) => void) | null
   >(null)
+  const [dragPreview, setDragPreview] = useState<{
+    payload: CanvasShapeDragPayload
+    position: { x: number; y: number }
+  } | null>(null)
 
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+  const clearDragPreview = () => {
+    setDragPreview(null)
+  }
+
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
     if (!event.dataTransfer.types.includes(SHAPE_DRAG_MIME_TYPE)) {
       return
     }
 
     event.preventDefault()
     event.dataTransfer.dropEffect = "copy"
+    setDragPreview((current) =>
+      current
+        ? {
+            ...current,
+            position: { x: event.clientX, y: event.clientY },
+          }
+        : current,
+    )
   }
 
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault()
 
     const rawPayload = event.dataTransfer.getData(SHAPE_DRAG_MIME_TYPE)
@@ -99,16 +118,44 @@ function CanvasSurface() {
       x: event.clientX,
       y: event.clientY,
     })
+    clearDragPreview()
   }
 
   return (
     <div className="relative h-full w-full" onDragOver={handleDragOver} onDrop={handleDrop}>
       <Canvas
-        onReady={({ createNodeFromDrop }) => {
-          createNodeFromDropRef.current = createNodeFromDrop
+        onReady={(api) => {
+          createNodeFromDropRef.current = api.createNodeFromDrop
+          onReady?.(api)
         }}
       />
-      <ShapePanel />
+      {dragPreview ? (
+        <div
+          className="pointer-events-none fixed left-0 top-0 z-30"
+          style={{
+            transform: `translate(${dragPreview.position.x - dragPreview.payload.size.width / 2}px, ${
+              dragPreview.position.y - dragPreview.payload.size.height / 2
+            }px)`,
+          }}
+        >
+          <CanvasShapeFrame
+            shape={dragPreview.payload.shape}
+            color={DEFAULT_NODE_COLOR}
+            width={dragPreview.payload.size.width}
+            height={dragPreview.payload.size.height}
+            className="opacity-85"
+          />
+        </div>
+      ) : null}
+      <ShapePanel
+        onShapeDragStart={(payload, clientPosition) => {
+          setDragPreview({ payload, position: clientPosition })
+        }}
+        onShapeDrag={(clientPosition) => {
+          setDragPreview((current) => (current ? { ...current, position: clientPosition } : current))
+        }}
+        onShapeDragEnd={clearDragPreview}
+      />
     </div>
   )
 }

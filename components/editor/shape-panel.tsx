@@ -1,5 +1,6 @@
 "use client"
 
+import type { DragEvent } from "react"
 import type { LucideIcon } from "lucide-react"
 import { Circle, Database, Diamond, Hexagon, Pill, Square } from "lucide-react"
 import { NODE_SHAPES, SHAPE_DEFAULT_SIZES, SHAPE_DRAG_MIME_TYPE, type CanvasShapeDragPayload, type NodeShape } from "@/types/canvas"
@@ -22,8 +23,14 @@ const SHAPE_LABELS: Record<NodeShape, string> = {
   hexagon: "Hexagon",
 }
 
-export function ShapePanel() {
-  const handleDragStart = (shape: NodeShape) => (event: React.DragEvent<HTMLButtonElement>) => {
+interface ShapePanelProps {
+  onShapeDragStart?: (payload: CanvasShapeDragPayload, clientPosition: { x: number; y: number }) => void
+  onShapeDrag?: (clientPosition: { x: number; y: number }) => void
+  onShapeDragEnd?: () => void
+}
+
+export function ShapePanel({ onShapeDragStart, onShapeDrag, onShapeDragEnd }: ShapePanelProps) {
+  const handleDragStart = (shape: NodeShape) => (event: DragEvent<HTMLButtonElement>) => {
     const payload: CanvasShapeDragPayload = {
       shape,
       size: SHAPE_DEFAULT_SIZES[shape],
@@ -31,6 +38,15 @@ export function ShapePanel() {
 
     event.dataTransfer.effectAllowed = "copy"
     event.dataTransfer.setData(SHAPE_DRAG_MIME_TYPE, JSON.stringify(payload))
+    onShapeDragStart?.(payload, { x: event.clientX, y: event.clientY })
+  }
+
+  const handleDrag = (event: DragEvent<HTMLButtonElement>) => {
+    if (event.clientX === 0 && event.clientY === 0) {
+      return
+    }
+
+    onShapeDrag?.({ x: event.clientX, y: event.clientY })
   }
 
   return (
@@ -47,6 +63,8 @@ export function ShapePanel() {
               aria-label={`Drag ${SHAPE_LABELS[shape]} shape`}
               title={SHAPE_LABELS[shape]}
               onDragStart={handleDragStart(shape)}
+              onDrag={handleDrag}
+              onDragEnd={onShapeDragEnd}
               className="flex h-11 w-11 items-center justify-center rounded-full border border-transparent bg-transparent text-copy-secondary transition-colors hover:border-border-subtle hover:bg-elevated hover:text-copy-primary"
             >
               <Icon className="h-5 w-5" />
