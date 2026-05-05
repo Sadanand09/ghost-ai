@@ -7,14 +7,19 @@ import type { Project } from "@/hooks/use-project-dialogs"
 
 interface ProjectItemProps {
   project: Project
+  isActive?: boolean
   showActions: boolean
   onRename: () => void
   onDelete: () => void
 }
 
-function ProjectItem({ project, showActions, onRename, onDelete }: ProjectItemProps) {
+function ProjectItem({ project, isActive, showActions, onRename, onDelete }: ProjectItemProps) {
   return (
-    <div className="group flex items-center justify-between rounded-xl px-2 py-1.5 hover:bg-elevated cursor-pointer">
+    <div
+      className={`group flex items-center justify-between rounded-xl px-2 py-1.5 cursor-pointer ${
+        isActive ? "bg-elevated" : "hover:bg-elevated"
+      }`}
+    >
       <span className="truncate text-sm text-copy-primary">{project.name}</span>
       {showActions && (
         <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
@@ -47,6 +52,7 @@ interface ProjectSidebarProps {
   onRenameProject: (project: Project) => void
   onDeleteProject: (project: Project) => void
   projects: Project[]
+  currentProjectId?: string
 }
 
 export function ProjectSidebar({
@@ -56,6 +62,7 @@ export function ProjectSidebar({
   onRenameProject,
   onDeleteProject,
   projects,
+  currentProjectId,
 }: ProjectSidebarProps) {
   const myProjects = projects.filter((p) => p.isOwned)
   const sharedProjects = projects.filter((p) => !p.isOwned)
@@ -117,6 +124,7 @@ export function ProjectSidebar({
                     <ProjectItem
                       key={project.id}
                       project={project}
+                      isActive={project.id === currentProjectId}
                       showActions
                       onRename={() => onRenameProject(project)}
                       onDelete={() => onDeleteProject(project)}
@@ -137,6 +145,7 @@ export function ProjectSidebar({
                     <ProjectItem
                       key={project.id}
                       project={project}
+                      isActive={project.id === currentProjectId}
                       showActions={false}
                       onRename={() => {}}
                       onDelete={() => {}}
