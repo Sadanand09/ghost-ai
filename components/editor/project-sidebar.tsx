@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Plus, X, Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -11,12 +12,15 @@ interface ProjectItemProps {
   showActions: boolean
   onRename: () => void
   onDelete: () => void
+  onClose: () => void
 }
 
-function ProjectItem({ project, isActive, showActions, onRename, onDelete }: ProjectItemProps) {
+function ProjectItem({ project, isActive, showActions, onRename, onDelete, onClose }: ProjectItemProps) {
   return (
-    <div
-      className={`group flex items-center justify-between rounded-xl px-2 py-1.5 cursor-pointer ${
+    <Link
+      href={`/editor/${project.id}`}
+      onClick={onClose}
+      className={`group flex items-center justify-between rounded-xl px-2 py-1.5 ${
         isActive ? "bg-elevated" : "hover:bg-elevated"
       }`}
     >
@@ -26,7 +30,7 @@ function ProjectItem({ project, isActive, showActions, onRename, onDelete }: Pro
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={(e) => { e.stopPropagation(); onRename() }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRename() }}
             className="h-6 w-6 text-copy-muted hover:text-copy-primary"
           >
             <Pencil className="h-3 w-3" />
@@ -34,14 +38,14 @@ function ProjectItem({ project, isActive, showActions, onRename, onDelete }: Pro
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={(e) => { e.stopPropagation(); onDelete() }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete() }}
             className="h-6 w-6 text-copy-muted hover:text-error"
           >
             <Trash2 className="h-3 w-3" />
           </Button>
         </div>
       )}
-    </div>
+    </Link>
   )
 }
 
@@ -128,6 +132,7 @@ export function ProjectSidebar({
                       showActions
                       onRename={() => onRenameProject(project)}
                       onDelete={() => onDeleteProject(project)}
+                      onClose={onClose}
                     />
                   ))}
                 </div>
@@ -149,6 +154,7 @@ export function ProjectSidebar({
                       showActions={false}
                       onRename={() => {}}
                       onDelete={() => {}}
+                      onClose={onClose}
                     />
                   ))}
                 </div>

@@ -1,17 +1,19 @@
 "use client"
 
-import { LiveMap, LiveObject } from "@liveblocks/client"
 import { Component, type DragEvent, type ReactNode, useRef, useState } from "react"
-import { LiveblocksProvider, RoomProvider, ClientSideSuspense } from "@liveblocks/react"
+import { ClientSideSuspense } from "@liveblocks/react"
 import { Canvas, type CanvasApi } from "@/components/editor/canvas"
 import { CanvasShapeFrame } from "@/components/editor/canvas-shape"
 import { ShapePanel } from "@/components/editor/shape-panel"
 import { DEFAULT_NODE_COLOR } from "@/types/canvas"
 import { SHAPE_DRAG_MIME_TYPE, type CanvasShapeDragPayload } from "@/types/canvas"
+import { type SaveStatus } from "@/hooks/use-canvas-persistence"
 
 interface CanvasWrapperProps {
   roomId: string
+  isOwner: boolean
   onReady?: (api: CanvasApi) => void
+  onSaveStatusChange?: (status: SaveStatus) => void
 }
 
 class CanvasErrorBoundary extends Component<
@@ -39,36 +41,23 @@ class CanvasErrorBoundary extends Component<
   }
 }
 
-export function CanvasWrapper({ roomId, onReady }: CanvasWrapperProps) {
+export function CanvasWrapper({ roomId, isOwner, onReady, onSaveStatusChange }: CanvasWrapperProps) {
   return (
-    <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
-      <RoomProvider
-        id={roomId}
-        initialPresence={{ cursor: null, isThinking: false }}
-        initialStorage={{
-          flow: new LiveObject({
-            nodes: new LiveMap(),
-            edges: new LiveMap(),
-          }),
-        }}
+    <CanvasErrorBoundary>
+      <ClientSideSuspense
+        fallback={
+          <div className="flex h-full items-center justify-center">
+            <p className="text-sm text-copy-faint">Loading canvas…</p>
+          </div>
+        }
       >
-        <CanvasErrorBoundary>
-          <ClientSideSuspense
-            fallback={
-              <div className="flex h-full items-center justify-center">
-                <p className="text-sm text-copy-faint">Loading canvas…</p>
-              </div>
-            }
-          >
-            <CanvasSurface onReady={onReady} />
-          </ClientSideSuspense>
-        </CanvasErrorBoundary>
-      </RoomProvider>
-    </LiveblocksProvider>
+        <CanvasSurface onReady={onReady} projectId={roomId} isOwner={isOwner} onSaveStatusChange={onSaveStatusChange} />
+      </ClientSideSuspense>
+    </CanvasErrorBoundary>
   )
 }
 
-function CanvasSurface({ onReady }: { onReady?: (api: CanvasApi) => void }) {
+function CanvasSurface({ onReady, projectId, isOwner, onSaveStatusChange }: { onReady?: (api: CanvasApi) => void, projectId: string, isOwner: boolean, onSaveStatusChange?: (status: SaveStatus) => void }) {
   const createNodeFromDropRef = useRef<
     ((payload: CanvasShapeDragPayload, clientPosition: { x: number; y: number }) => void) | null
   >(null)
@@ -124,6 +113,9 @@ function CanvasSurface({ onReady }: { onReady?: (api: CanvasApi) => void }) {
   return (
     <div className="relative h-full w-full" onDragOver={handleDragOver} onDrop={handleDrop}>
       <Canvas
+        projectId={projectId}
+        isOwner={isOwner}
+        onSaveStatusChange={onSaveStatusChange}
         onReady={(api) => {
           createNodeFromDropRef.current = api.createNodeFromDrop
           onReady?.(api)

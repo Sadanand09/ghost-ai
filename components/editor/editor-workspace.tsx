@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { PanelLeftClose, PanelLeftOpen, Share2, MessageSquare, LayoutTemplate } from "lucide-react"
+import { LiveMap, LiveObject } from "@liveblocks/client"
+import { LiveblocksProvider, RoomProvider } from "@liveblocks/react"
+import { PanelLeftClose, PanelLeftOpen, Share2, MessageSquare, LayoutTemplate, CloudOff, CloudUpload, CheckCircle2 } from "lucide-react"
 import { UserButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { ProjectSidebar } from "@/components/editor/project-sidebar"
@@ -11,9 +13,12 @@ import { CreateProjectDialog } from "@/components/editor/create-project-dialog"
 import { RenameProjectDialog } from "@/components/editor/rename-project-dialog"
 import { DeleteProjectDialog } from "@/components/editor/delete-project-dialog"
 import { StarterTemplatesModal } from "@/components/editor/starter-templates-modal"
+import { PresenceAvatars } from "@/components/editor/presence-avatars"
+import { AiSidebar } from "@/components/editor/ai-sidebar"
 import { useProjectActions } from "@/hooks/use-project-actions"
 import type { Project } from "@/hooks/use-project-dialogs"
 import type { CanvasApi } from "@/components/editor/canvas"
+import type { SaveStatus } from "@/hooks/use-canvas-persistence"
 
 interface EditorWorkspaceProps {
   projectName: string
@@ -28,6 +33,7 @@ export function EditorWorkspace({ projectName, currentProjectId, projects, isOwn
   const [isShareOpen, setIsShareOpen] = useState(false)
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false)
   const [canvasApi, setCanvasApi] = useState<CanvasApi | null>(null)
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle")
 
   const {
     openDialog,
@@ -45,7 +51,46 @@ export function EditorWorkspace({ projectName, currentProjectId, projects, isOwn
     handleDelete,
   } = useProjectActions()
 
+  const renderSaveStatus = () => {
+    switch (saveStatus) {
+      case "saving":
+        return (
+          <div className="flex items-center gap-1.5 px-2 text-[11px] font-medium text-copy-muted animate-pulse">
+            <CloudUpload className="h-3.5 w-3.5" />
+            Saving...
+          </div>
+        )
+      case "saved":
+        return (
+          <div className="flex items-center gap-1.5 px-2 text-[11px] font-medium text-copy-muted">
+            <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+            Saved
+          </div>
+        )
+      case "error":
+        return (
+          <div className="flex items-center gap-1.5 px-2 text-[11px] font-medium text-error">
+            <CloudOff className="h-3.5 w-3.5" />
+            Save error
+          </div>
+        )
+      default:
+        return null
+    }
+  }
+
   return (
+    <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
+      <RoomProvider
+        id={currentProjectId}
+        initialPresence={{ cursor: null, thinking: false }}
+        initialStorage={{
+          flow: new LiveObject({
+            nodes: new LiveMap(),
+            edges: new LiveMap(),
+          }),
+        }}
+      >
     <div className="h-screen w-screen overflow-hidden bg-base">
       <header className="fixed top-0 left-0 right-0 z-40 flex h-12 items-center justify-between border-b border-border-default bg-surface px-3">
         <div className="flex items-center">
@@ -70,6 +115,7 @@ export function EditorWorkspace({ projectName, currentProjectId, projects, isOwn
         </span>
 
         <div className="flex items-center gap-2">
+          {renderSaveStatus()}
           <Button
             variant="ghost"
             size="sm"
@@ -98,7 +144,11 @@ export function EditorWorkspace({ projectName, currentProjectId, projects, isOwn
           >
             <MessageSquare className="h-5 w-5" />
           </Button>
-          <UserButton />
+          
+          <div className="flex items-center ml-2">
+            <PresenceAvatars />
+            <UserButton />
+          </div>
         </div>
       </header>
 
@@ -113,12 +163,18 @@ export function EditorWorkspace({ projectName, currentProjectId, projects, isOwn
       />
 
       <main className="absolute inset-0 pt-12">
-        <CanvasWrapper roomId={currentProjectId} onReady={setCanvasApi} />
+        <CanvasWrapper
+          roomId={currentProjectId}
+          isOwner={isOwner}
+          onReady={setCanvasApi}
+          onSaveStatusChange={setSaveStatus}
+        />
       </main>
 
-      {isAiPanelOpen && (
-        <aside className="fixed top-12 right-0 bottom-0 w-80 border-l border-border-default bg-surface" />
-      )}
+      <AiSidebar 
+        isOpen={isAiPanelOpen} 
+        onClose={() => setIsAiPanelOpen(false)} 
+      />
 
       <ShareDialog
         open={isShareOpen}
@@ -159,5 +215,7 @@ export function EditorWorkspace({ projectName, currentProjectId, projects, isOwn
         isLoading={isLoading}
       />
     </div>
+      </RoomProvider>
+    </LiveblocksProvider>
   )
 }

@@ -64,12 +64,14 @@
     --color-copy-muted: var(--text-muted);
     --color-copy-faint: var(--text-faint);
 
-    /* custom border utilities: border-border-default, border-border-subtle */
+    /* custom border utilities: border-border-default, border-border-subtle, border-surface-border */
     --color-border-default: var(--border-default);
     --color-border-subtle: var(--border-subtle);
+    --color-surface-border: var(--border-default);
 
-    /* custom accent utilities: bg-brand, text-brand, bg-accent-dim, bg-accent-ai, text-accent-ai, text-accent-ai-text */
+    /* custom accent utilities: bg-brand, text-brand, bg-brand-dim, bg-accent-dim, bg-accent-ai, text-accent-ai, text-accent-ai-text */
     --color-brand: var(--accent-primary);
+    --color-brand-dim: var(--accent-primary-dim);
     --color-accent-dim: var(--accent-primary-dim);
     --color-accent-ai: var(--accent-ai);
     --color-accent-ai-text: var(--accent-ai-text);

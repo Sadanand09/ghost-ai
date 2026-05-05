@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import {
   Background,
   BackgroundVariant,
@@ -13,12 +13,13 @@ import {
   type NodeChange,
   type ReactFlowInstance,
 } from "@xyflow/react"
-import { useCanRedo, useCanUndo, useRedo, useUndo } from "@liveblocks/react"
-import { useLiveblocksFlow, Cursors } from "@liveblocks/react-flow"
+import { useCanRedo, useCanUndo, useRedo, useUndo, useMyPresence } from "@liveblocks/react"
+import { useLiveblocksFlow } from "@liveblocks/react-flow"
 import { CanvasControlBar } from "@/components/editor/canvas-control-bar"
 import { CanvasEdgeView } from "@/components/editor/canvas-edge"
 import { CanvasEditingProvider } from "@/components/editor/canvas-editing-context"
 import { CanvasNodeView } from "@/components/editor/canvas-node"
+import { LiveCursors } from "@/components/editor/live-cursors"
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { DEFAULT_NODE_COLOR, type CanvasNode, type CanvasEdge, type CanvasShapeDragPayload } from "@/types/canvas"
 import { type CanvasTemplate } from "./starter-templates"
@@ -49,6 +50,8 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
   interactionWidth: 28,
 }
 
+import { useCanvasPersistence, type SaveStatus } from "@/hooks/use-canvas-persistence"
+
 export interface CanvasApi {
   instance: ReactFlowInstance<CanvasNode, CanvasEdge>
   createNodeFromDrop: (payload: CanvasShapeDragPayload, clientPosition: { x: number; y: number }) => void
@@ -56,20 +59,33 @@ export interface CanvasApi {
 }
 
 interface CanvasProps {
+  projectId: string
+  isOwner: boolean
   onReady?: (api: CanvasApi) => void
+  onSaveStatusChange?: (status: SaveStatus) => void
 }
 
-export function Canvas({ onReady }: CanvasProps) {
+export function Canvas({ projectId, isOwner, onReady, onSaveStatusChange }: CanvasProps) {
   const flowInstanceRef = useRef<ReactFlowInstance<CanvasNode, CanvasEdge> | null>(null)
   const nodeCounterRef = useRef(0)
   const edgeCounterRef = useRef(0)
   const [flowInstance, setFlowInstance] = useState<ReactFlowInstance<CanvasNode, CanvasEdge> | null>(null)
+  
+  const [, updateMyPresence] = useMyPresence()
+  
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, onDelete } =
     useLiveblocksFlow<CanvasNode, CanvasEdge>({
       suspense: true,
       nodes: { initial: [] },
       edges: { initial: [] },
     })
+
+  const { saveStatus } = useCanvasPersistence(projectId, nodes, edges, isOwner)
+
+  useEffect(() => {
+    onSaveStatusChange?.(saveStatus)
+  }, [saveStatus, onSaveStatusChange])
+
   const undo = useUndo()
   const redo = useRedo()
   const canUndo = useCanUndo()
@@ -229,6 +245,21 @@ export function Canvas({ onReady }: CanvasProps) {
     void flowInstance.fitView({ duration: 220, padding: 0.16 })
   }
 
+  const handleMouseMove = (event: React.MouseEvent) => {
+    if (!flowInstance) return
+
+    const position = flowInstance.screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    })
+
+    updateMyPresence({ cursor: position })
+  }
+
+  const handleMouseLeave = () => {
+    updateMyPresence({ cursor: null })
+  }
+
   return (
     <CanvasEditingProvider value={{ replaceNode, replaceEdge, importTemplate }}>
       <div className="relative h-full w-full">
@@ -245,9 +276,11 @@ export function Canvas({ onReady }: CanvasProps) {
           edgeTypes={edgeTypes}
           defaultEdgeOptions={defaultEdgeOptions}
           onInit={handleInit}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
         >
           <Background variant={BackgroundVariant.Dots} />
-          <Cursors />
+          <LiveCursors />
         </ReactFlow>
         <CanvasControlBar
           canUndo={canUndo}
