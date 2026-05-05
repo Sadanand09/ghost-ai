@@ -3,10 +3,10 @@
 Update this file whenever the current phase, active feature, or implementation state changes.
 
 ## Current Phase
-- Feature 04 (Project Dialogs) — complete
+- Feature 05 (Prisma) — complete
 
 ## Current Goal
-- Feature 04: Project Dialogs — editor home screen, create/rename/delete dialogs, sidebar project actions
+- Feature 05: Prisma — data models, client singleton, first migration
 
 ## Completed
 
@@ -14,13 +14,14 @@ Update this file whenever the current phase, active feature, or implementation s
 - Feature 02: Editor Chrome — EditorNavbar (fixed top bar with PanelLeftOpen/PanelLeftClose toggle) and ProjectSidebar (fixed overlay, slides from left, Projects title + close button, My Projects/Shared tabs with empty states, New Project button) added to components/editor/. Dialog pattern confirmed ready via existing components/ui/dialog.tsx. TypeScript and ESLint clean.
 - Feature 03: Auth — ClerkProvider with dark theme from @clerk/ui/themes wrapping root layout. proxy.ts at project root protects all routes except /sign-in and /sign-up (defined via NEXT_PUBLIC_CLERK_SIGN_IN_URL / NEXT_PUBLIC_CLERK_SIGN_UP_URL env vars). Two-panel sign-in and sign-up pages with logo/tagline/feature list on left, Clerk form on right (form-only on mobile). Root page redirects authenticated users to /editor, unauthenticated to /sign-in. UserButton added to EditorNavbar right section. TypeScript and build clean.
 - Feature 04: Project Dialogs — editor home screen (heading + description + New Project button, centered). useProjectDialogs hook in hooks/use-project-dialogs.ts manages dialog/form/loading state; toSlug exported. CreateProjectDialog (name input + live slug preview), RenameProjectDialog (prefilled, auto-focus, Enter submits), DeleteProjectDialog (destructive confirm only) — all with onConfirm callbacks. Editor page holds projects[] state; handleCreate/Rename/Delete update it and call closeDialog(). ProjectSidebar accepts projects prop (splits owned/shared), removes hardcoded mock data, overrides tab trigger text to text-copy-secondary/text-copy-primary. Dialog descriptions use text-copy-secondary (was text-muted-foreground). Home description uses text-copy-secondary. TypeScript and ESLint clean.
+- Feature 05: Prisma — Project and ProjectCollaborator models in prisma/models/project.prisma (enum ProjectStatus DRAFT/ARCHIVED, cascade delete, unique constraint on project/email, indexes on ownerId, createdAt, email, projectId+createdAt). Fixed schema.prisma output path typo (..app → ../app). lib/prisma.ts singleton branches on DATABASE_URL: prisma+postgres:// uses accelerateUrl, otherwise PrismaPg adapter. Migration 20260505010628_init_projects applied. Client generated to app/generated/prisma/. Build clean.
 
 ## In Progress
 
 - None.
 
 ## Next Up
-- TBD (Feature 05)
+- TBD (Feature 06)
 
 
 
