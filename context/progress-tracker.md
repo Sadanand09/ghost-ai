@@ -3,10 +3,10 @@
 Update this file whenever the current phase, active feature, or implementation state changes.
 
 ## Current Phase
-- Feature 09 (Share Dialog) — complete
+- Feature 12 (Shape Panel) — implementation complete, build verification pending
 
 ## Current Goal
-- Feature 09: Share dialog with invite/remove collaborators and Clerk-enriched avatars
+- Feature 12: shape panel drag-and-drop node creation
 
 ## Completed
 
@@ -19,13 +19,18 @@ Update this file whenever the current phase, active feature, or implementation s
 - Feature 07: Wire Editor Home — app/editor/page.tsx converted to async server component; fetches owned+shared projects via lib/projects.ts (Prisma + Clerk currentUser for email lookup). EditorHome client wrapper in components/editor/editor-home.tsx. useProjectActions hook in hooks/use-project-actions.ts manages dialog state + API mutations (POST /api/projects with client-generated roomId slug+suffix, PATCH for rename, DELETE with redirect vs refresh). POST handler updated to accept optional id. CreateProjectDialog shows Room ID preview; all dialogs have isLoading state. Project interface slug field removed. Build clean.
 - Feature 08: Editor Workspace Shell — app/editor/[roomId]/page.tsx is an async server component; unauthenticated users redirect to /sign-in, non-existent or unauthorized projects render AccessDenied. lib/project-access.ts exposes getCurrentIdentity() (Clerk userId + primary email) and getProjectIfAccessible() (owner or collaborator check via Prisma). components/editor/access-denied.tsx: centered lock icon + message + /editor link. components/editor/editor-workspace.tsx: client shell with sidebar toggle + AI panel toggle state, navbar showing project name + Share placeholder + AI toggle, existing ProjectSidebar with currentProjectId highlight, canvas placeholder, right AI sidebar placeholder. ProjectSidebar updated with optional currentProjectId prop; active project item renders bg-elevated persistently. Build clean.
 - Feature 09: Share Dialog — GET/POST /api/projects/[projectId]/collaborators and DELETE /api/projects/[projectId]/collaborators/[email] routes. Ownership enforced server-side for all mutations. Clerk Backend API (clerkClient().users.getUserList) enriches collaborator emails with display name and avatar; falls back to email-only. components/editor/share-dialog.tsx: owners see invite form, collaborator list with remove buttons, and copy-link; collaborators see read-only list only. EditorWorkspace accepts isOwner prop; Share button opens dialog. page.tsx passes isOwner from getProjectIfAccessible result. Build clean.
+- Feature 10: Liveblocks Setup — @liveblocks/node installed. liveblocks.config.ts defines Presence (cursor {x,y}|null, isThinking boolean) and UserMeta (id, name, avatar, color). lib/liveblocks.ts: cached Liveblocks node client via getLiveblocks() lazy singleton; getUserColor() deterministically maps userId to a color from a 10-color palette via hash. POST /api/liveblocks-auth: requires Clerk auth, verifies project access via getProjectIfAccessible, calls getOrCreateRoom (private room), issues identifyUser token with name/avatar/color. Returns 403 for unauthorized access. Build clean.
+- Feature 11: Base Canvas — types/canvas.ts defines NodeData (label, color, shape) and CanvasNode/CanvasEdge type aliases. components/editor/canvas-wrapper.tsx: client component with LiveblocksProvider (authEndpoint /api/liveblocks-auth), RoomProvider (roomId + initialPresence), inline class CanvasErrorBoundary, and ClientSideSuspense loading state. components/editor/canvas.tsx: client component using useLiveblocksFlow<CanvasNode, CanvasEdge> with suspense:true and empty initial nodes/edges; ReactFlow with ConnectionMode.Loose, fitView, MiniMap, dot-pattern Background, and Cursors. EditorWorkspace main area replaced with <CanvasWrapper roomId={currentProjectId} />. CSS imports (@xyflow/react/dist/style.css, @liveblocks/react-ui/styles.css, @liveblocks/react-flow/styles.css) in canvas.tsx. Build clean.
+- Feature 12: Shape Panel — types/canvas.ts now defines the documented node color palette, supported shapes, default sizes, and drag payload mime type. components/editor/shape-panel.tsx adds a floating bottom-center pill toolbar with draggable rectangle, diamond, circle, pill, cylinder, and hexagon buttons. components/editor/canvas-wrapper.tsx now handles dragover/drop at the canvas surface and forwards parsed shape payloads into the canvas. components/editor/canvas.tsx registers the custom `canvasNode` renderer and creates new Liveblocks-backed nodes through `onNodesChange([{ type: "add" }])`, using empty labels, default node color, dropped shape value, and IDs based on shape + timestamp + counter. components/editor/canvas-node.tsx provides the temporary rectangular node renderer required for this unit. `tsc --noEmit` passes; `next build` starts but is currently hanging in this shell after "Creating an optimized production build ...", so final build confirmation is still pending.
+- Project action follow-up — components/editor/editor-workspace.tsx now reuses the existing useProjectActions dialog flow, so create, rename, and delete actions from the workspace sidebar invoke the real handlers instead of no-op callbacks. Removed a temporary console log from hooks/use-project-dialogs.ts. Pending verification.
+- Liveblocks auth fix — app/api/liveblocks-auth/route.ts now uses prepareSession(...).allow(room, FULL_ACCESS).authorize() after project membership verification. The previous identifyUser() flow only identified users and relied on external Permissions API configuration, which caused "You have no access to this room" for valid project members in local development. Pending verification.
 
 ## In Progress
 
-- None.
+- Feature 12 verification — waiting on a successful `next build` completion in the current local shell.
 
 ## Next Up
-- TBD (Feature 10)
+- Finish Feature 12 build verification, then continue to the next canvas feature unit.
 
 
 
@@ -46,7 +51,8 @@ Update this file whenever the current phase, active feature, or implementation s
 - shadcn version 4.5.0 was used; it auto-detected Tailwind v4.
 - lucide-react ^1.11.0 installed as a direct dependency.
 - @clerk/nextjs ^7.3.0 and @clerk/ui ^1.7.0 installed. Appearance uses `theme` property (not `baseTheme`) and `Variables` type from @clerk/ui/internal. proxy.ts is Next.js 16's replacement for middleware.ts — same API, renamed.
-- @liveblocks/node installed alongside existing @liveblocks/client, @liveblocks/react, @liveblocks/react-flow, @liveblocks/react-ui. Liveblocks client uses lazy init (getLiveblocks()) to avoid key validation errors at build time.
+- @liveblocks/node ^3.18.5 installed alongside @liveblocks/client, @liveblocks/react, @liveblocks/react-flow, @liveblocks/react-ui. Liveblocks client uses lazy singleton (getLiveblocks()) to avoid key validation errors at build time. Identity type in @liveblocks/node requires groupIds (use [] when no groups). Rooms are created with defaultAccesses: [] (private) and usersAccesses set per-call at auth time.
+- liveblocks.config.ts now types room storage with `flow: LiveblocksFlow<CanvasNode, CanvasEdge>`, and RoomProvider initializes that flow store up front so drag-and-drop node creation has a stable shared storage shape from first render.
 - @vercel/blob ^2.3.3 installed. BLOB_READ_WRITE_TOKEN set in .env.local.
 - @trigger.dev/sdk ^4.4.4 installed. trigger.config.ts reads project ref from TRIGGER_PROJECT_REF env var. TRIGGER_SECRET_KEY must be set in .env.local for triggering tasks from server code. Run `npx trigger.dev@latest dev` for local development; deploy with `npx trigger.dev@latest deploy`.
 - Prisma 7.8.0 — generated client goes to app/generated/prisma/; import PrismaClient from @/app/generated/prisma/client (no index.ts in v7). Constructor always requires { adapter } argument. @prisma/adapter-pg used for all connections.

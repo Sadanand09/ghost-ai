@@ -6,6 +6,11 @@ import { UserButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { ProjectSidebar } from "@/components/editor/project-sidebar"
 import { ShareDialog } from "@/components/editor/share-dialog"
+import { CanvasWrapper } from "@/components/editor/canvas-wrapper"
+import { CreateProjectDialog } from "@/components/editor/create-project-dialog"
+import { RenameProjectDialog } from "@/components/editor/rename-project-dialog"
+import { DeleteProjectDialog } from "@/components/editor/delete-project-dialog"
+import { useProjectActions } from "@/hooks/use-project-actions"
 import type { Project } from "@/hooks/use-project-dialogs"
 
 interface EditorWorkspaceProps {
@@ -19,6 +24,21 @@ export function EditorWorkspace({ projectName, currentProjectId, projects, isOwn
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
+  const {
+    openDialog,
+    activeProject,
+    name,
+    roomId,
+    isLoading,
+    setName,
+    openCreate,
+    openRename,
+    openDelete,
+    closeDialog,
+    handleCreate,
+    handleRename,
+    handleDelete,
+  } = useProjectActions()
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-base">
@@ -71,15 +91,15 @@ export function EditorWorkspace({ projectName, currentProjectId, projects, isOwn
       <ProjectSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
-        onNewProject={() => {}}
-        onRenameProject={() => {}}
-        onDeleteProject={() => {}}
+        onNewProject={openCreate}
+        onRenameProject={openRename}
+        onDeleteProject={openDelete}
         projects={projects}
         currentProjectId={currentProjectId}
       />
 
-      <main className="absolute inset-0 pt-12 flex items-center justify-center bg-base">
-        <p className="text-sm text-copy-faint">Canvas coming soon</p>
+      <main className="absolute inset-0 pt-12">
+        <CanvasWrapper roomId={currentProjectId} />
       </main>
 
       {isAiPanelOpen && (
@@ -91,6 +111,32 @@ export function EditorWorkspace({ projectName, currentProjectId, projects, isOwn
         onClose={() => setIsShareOpen(false)}
         projectId={currentProjectId}
         isOwner={isOwner}
+      />
+
+      <CreateProjectDialog
+        open={openDialog === "create"}
+        onClose={closeDialog}
+        onConfirm={handleCreate}
+        name={name}
+        roomId={roomId}
+        onNameChange={setName}
+        isLoading={isLoading}
+      />
+      <RenameProjectDialog
+        open={openDialog === "rename"}
+        onClose={closeDialog}
+        onConfirm={handleRename}
+        project={activeProject}
+        name={name}
+        onNameChange={setName}
+        isLoading={isLoading}
+      />
+      <DeleteProjectDialog
+        open={openDialog === "delete"}
+        onClose={closeDialog}
+        onConfirm={handleDelete}
+        project={activeProject}
+        isLoading={isLoading}
       />
     </div>
   )
