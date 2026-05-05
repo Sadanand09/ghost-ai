@@ -16,10 +16,11 @@ import type { Project } from "@/hooks/use-project-dialogs"
 interface RenameProjectDialogProps {
   open: boolean
   onClose: () => void
-  onConfirm: (name: string) => void
+  onConfirm: () => void
   project: Project | null
   name: string
   onNameChange: (value: string) => void
+  isLoading: boolean
 }
 
 export function RenameProjectDialog({
@@ -29,10 +30,11 @@ export function RenameProjectDialog({
   project,
   name,
   onNameChange,
+  isLoading,
 }: RenameProjectDialogProps) {
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" && name.trim()) {
-      onConfirm(name)
+    if (e.key === "Enter" && name.trim() && !isLoading) {
+      onConfirm()
     }
   }
 
@@ -54,14 +56,15 @@ export function RenameProjectDialog({
           onChange={(e) => onNameChange(e.target.value)}
           onKeyDown={handleKeyDown}
           autoFocus
+          disabled={isLoading}
         />
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} className="text-copy-secondary">
+          <Button variant="outline" onClick={onClose} disabled={isLoading} className="text-copy-secondary">
             Cancel
           </Button>
-          <Button disabled={!name.trim()} onClick={() => onConfirm(name)}>
-            Rename
+          <Button disabled={!name.trim() || isLoading} onClick={onConfirm}>
+            {isLoading ? "Renaming…" : "Rename"}
           </Button>
         </DialogFooter>
       </DialogContent>

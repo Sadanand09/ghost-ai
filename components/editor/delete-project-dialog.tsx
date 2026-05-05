@@ -16,6 +16,7 @@ interface DeleteProjectDialogProps {
   onClose: () => void
   onConfirm: () => void
   project: Project | null
+  isLoading: boolean
 }
 
 export function DeleteProjectDialog({
@@ -23,6 +24,7 @@ export function DeleteProjectDialog({
   onClose,
   onConfirm,
   project,
+  isLoading,
 }: DeleteProjectDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
@@ -37,11 +39,11 @@ export function DeleteProjectDialog({
         </DialogHeader>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} className="text-copy-secondary">
+          <Button variant="outline" onClick={onClose} disabled={isLoading} className="text-copy-secondary">
             Cancel
           </Button>
-          <Button variant="destructive" onClick={onConfirm}>
-            Delete
+          <Button variant="destructive" onClick={onConfirm} disabled={isLoading}>
+            {isLoading ? "Deleting…" : "Delete"}
           </Button>
         </DialogFooter>
       </DialogContent>
