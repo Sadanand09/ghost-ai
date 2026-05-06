@@ -13,7 +13,7 @@ import {
   type NodeChange,
   type ReactFlowInstance,
 } from "@xyflow/react"
-import { useCanRedo, useCanUndo, useRedo, useUndo, useMyPresence } from "@liveblocks/react"
+import { useCanRedo, useCanUndo, useRedo, useUndo, useMyPresence, useEventListener } from "@liveblocks/react"
 import { useLiveblocksFlow } from "@liveblocks/react-flow"
 import { CanvasControlBar } from "@/components/editor/canvas-control-bar"
 import { CanvasEdgeView } from "@/components/editor/canvas-edge"
@@ -51,11 +51,13 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 }
 
 import { useCanvasPersistence, type SaveStatus } from "@/hooks/use-canvas-persistence"
+import { cn } from "@/lib/utils"
 
 export interface CanvasApi {
   instance: ReactFlowInstance<CanvasNode, CanvasEdge>
   createNodeFromDrop: (payload: CanvasShapeDragPayload, clientPosition: { x: number; y: number }) => void
   importTemplate: (template: CanvasTemplate) => void
+  applyDesign: (nodes: CanvasNode[], edges: CanvasEdge[]) => void
 }
 
 interface CanvasProps {
@@ -147,6 +149,22 @@ export function Canvas({ projectId, isOwner, onReady, onSaveStatusChange }: Canv
     }, 50)
   }
 
+  const applyDesign = (designNodes: CanvasNode[], designEdges: CanvasEdge[]) => {
+    if (!flowInstanceRef.current) return
+
+    const nodeRemovals: NodeChange<CanvasNode>[] = nodes.map((n) => ({ id: n.id, type: "remove" as const }))
+    const nodeAdditions: NodeChange<CanvasNode>[] = designNodes.map((n) => ({ type: "add" as const, item: n }))
+    const edgeRemovals: EdgeChange<CanvasEdge>[] = edges.map((e) => ({ id: e.id, type: "remove" as const }))
+    const edgeAdditions: EdgeChange<CanvasEdge>[] = designEdges.map((e) => ({ type: "add" as const, item: e }))
+
+    onNodesChange([...nodeRemovals, ...nodeAdditions])
+    onEdgesChange([...edgeRemovals, ...edgeAdditions])
+
+    setTimeout(() => {
+      flowInstanceRef.current?.fitView({ duration: 500, padding: 0.2 })
+    }, 50)
+  }
+
   const handleInit = (instance: ReactFlowInstance<CanvasNode, CanvasEdge>) => {
     flowInstanceRef.current = instance
     setFlowInstance(instance)
@@ -154,6 +172,7 @@ export function Canvas({ projectId, isOwner, onReady, onSaveStatusChange }: Canv
       instance,
       createNodeFromDrop,
       importTemplate,
+      applyDesign,
     })
   }
 
@@ -263,6 +282,7 @@ export function Canvas({ projectId, isOwner, onReady, onSaveStatusChange }: Canv
   return (
     <CanvasEditingProvider value={{ replaceNode, replaceEdge, importTemplate }}>
       <div className="relative h-full w-full">
+        <AiStatusBanner />
         <ReactFlow<CanvasNode, CanvasEdge>
           nodes={nodes}
           edges={edges}
@@ -293,5 +313,43 @@ export function Canvas({ projectId, isOwner, onReady, onSaveStatusChange }: Canv
         />
       </div>
     </CanvasEditingProvider>
+  )
+}
+
+function AiStatusBanner() {
+  const [banner, setBanner] = useState<{ status: string; message: string } | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEventListener(({ event }) => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    setBanner({ status: event.status, message: event.message })
+
+    if (event.status === "complete" || event.status === "error") {
+      timerRef.current = setTimeout(() => setBanner(null), 3000)
+    }
+  })
+
+  if (!banner) return null
+
+  const isActive = banner.status === "thinking" || banner.status === "applying"
+
+  return (
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+      <div
+        className={cn(
+          "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium shadow-lg border backdrop-blur-sm",
+          isActive
+            ? "bg-[var(--accent-ai)]/20 border-[var(--accent-ai)]/30 text-[var(--accent-ai-text)]"
+            : banner.status === "complete"
+              ? "bg-[var(--state-success)]/20 border-[var(--state-success)]/30 text-[var(--state-success)]"
+              : "bg-[var(--state-error)]/20 border-[var(--state-error)]/30 text-[var(--state-error)]"
+        )}
+      >
+        {isActive && (
+          <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-ai-text)] animate-pulse" />
+        )}
+        {banner.message}
+      </div>
+    </div>
   )
 }

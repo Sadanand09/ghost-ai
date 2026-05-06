@@ -2,6 +2,7 @@
 
 import { useOthers } from "@liveblocks/react"
 import { useUser } from "@clerk/nextjs"
+import { Bot } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const MAX_AVATARS = 5
@@ -28,17 +29,23 @@ export function PresenceAvatars() {
             <div
               key={other.id}
               className="relative h-8 w-8 rounded-full border-2 border-surface bg-elevated ring-1 ring-border-default overflow-hidden flex items-center justify-center"
-              title={name}
+              title={other.presence.thinking ? `${name} (thinking…)` : name}
               style={{ zIndex: collaborators.length - collaborators.indexOf(other) }}
             >
-              {avatar ? (
+              {other.id === "ghost-ai-agent" ? (
+                <div className="flex h-full w-full items-center justify-center bg-[var(--accent-ai)]/20">
+                  <Bot className="h-4 w-4 text-[var(--accent-ai-text)]" />
+                </div>
+              ) : avatar ? (
                 <img src={avatar} alt={name} className="h-full w-full object-cover" />
               ) : (
                 <span className="text-[10px] font-bold text-copy-primary">
                   {getInitials(name)}
                 </span>
               )}
-              {/* Optional: border color matching user color? Spec says "subtle ring" */}
+              {other.presence.thinking && (
+                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-[var(--accent-ai)] animate-pulse border-2 border-surface" />
+              )}
             </div>
           )
         })}

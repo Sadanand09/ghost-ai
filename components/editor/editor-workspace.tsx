@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { LiveMap, LiveObject } from "@liveblocks/client"
+import { LiveList, LiveMap, LiveObject } from "@liveblocks/client"
 import { LiveblocksProvider, RoomProvider } from "@liveblocks/react"
 import { PanelLeftClose, PanelLeftOpen, Share2, MessageSquare, LayoutTemplate, CloudOff, CloudUpload, CheckCircle2 } from "lucide-react"
 import { UserButton } from "@clerk/nextjs"
@@ -89,6 +89,7 @@ export function EditorWorkspace({ projectName, currentProjectId, projects, isOwn
             nodes: new LiveMap(),
             edges: new LiveMap(),
           }),
+          chatMessages: new LiveList([]),
         }}
       >
     <div className="h-screen w-screen overflow-hidden bg-base">
@@ -171,9 +172,13 @@ export function EditorWorkspace({ projectName, currentProjectId, projects, isOwn
         />
       </main>
 
-      <AiSidebar 
-        isOpen={isAiPanelOpen} 
-        onClose={() => setIsAiPanelOpen(false)} 
+      <AiSidebar
+        isOpen={isAiPanelOpen}
+        onClose={() => setIsAiPanelOpen(false)}
+        projectId={currentProjectId}
+        onApplyDesign={(nodes, edges) =>
+          canvasApi?.applyDesign(nodes, edges)
+        }
       />
 
       <ShareDialog

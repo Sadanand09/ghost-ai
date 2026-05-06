@@ -1,6 +1,7 @@
 "use client"
 
 import { useOthers } from "@liveblocks/react"
+import { Loader2 } from "lucide-react"
 
 export function LiveCursors() {
   const others = useOthers()
@@ -17,6 +18,7 @@ export function LiveCursors() {
             x={presence.cursor.x}
             y={presence.cursor.y}
             name={info.name}
+            thinking={presence.thinking}
           />
         )
       })}
@@ -24,7 +26,19 @@ export function LiveCursors() {
   )
 }
 
-function Cursor({ color, x, y, name }: { color: string; x: number; y: number; name: string }) {
+function Cursor({
+  color,
+  x,
+  y,
+  name,
+  thinking,
+}: {
+  color: string
+  x: number
+  y: number
+  name: string
+  thinking: boolean
+}) {
   return (
     <div
       className="pointer-events-none absolute top-0 left-0 z-50 transition-transform duration-100 ease-out"
@@ -46,9 +60,10 @@ function Cursor({ color, x, y, name }: { color: string; x: number; y: number; na
         />
       </svg>
       <div
-        className="ml-3 mt-1 rounded px-1.5 py-0.5 text-[10px] font-bold text-white shadow-md whitespace-nowrap"
+        className="ml-3 mt-1 rounded px-1.5 py-0.5 text-[10px] font-bold text-white shadow-md whitespace-nowrap flex items-center gap-1"
         style={{ backgroundColor: color }}
       >
+        {thinking && <Loader2 className="h-2.5 w-2.5 animate-spin" />}
         {name}
       </div>
     </div>
